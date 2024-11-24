@@ -1,0 +1,25 @@
+{
+  "id": "scene_triggered",
+  "title": {
+    "en": "Scene was triggered",
+    "pl": "Scena została uruchomiona"
+  },
+  "tokens": [
+    {
+      "name": "scene",
+      "type": "number",
+      "title": {
+        "en": "Scene number",
+        "pl": "Numer sceny"
+      }
+    },
+    {
+      "name": "scene_name",
+      "type": "string",
+      "title": {
+        "en": "Scene name",
+        "pl": "Nazwa sceny"
+      }
+    }
+  ]
+}

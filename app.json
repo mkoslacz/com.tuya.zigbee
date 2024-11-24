@@ -110,6 +110,31 @@
   "flow": {
     "triggers": [
       {
+        "id": "scene_triggered",
+        "title": {
+          "en": "Scene was triggered",
+          "pl": "Scena została uruchomiona"
+        },
+        "tokens": [
+          {
+            "name": "scene",
+            "type": "number",
+            "title": {
+              "en": "Scene number",
+              "pl": "Numer sceny"
+            }
+          },
+          {
+            "name": "scene_name",
+            "type": "string",
+            "title": {
+              "en": "Scene name",
+              "pl": "Nazwa sceny"
+            }
+          }
+        ]
+      },
+      {
         "id": "target_distance_changed",
         "title": {
           "en": "Target distance changed"
@@ -9453,6 +9478,130 @@
       "settings": []
     },
     {
+      "id": "sr_zs_switch",
+      "name": {
+        "en": "SR-ZS Switch",
+        "pl": "Przełącznik SR-ZS"
+      },
+      "class": "socket",
+      "capabilities": [
+        "onoff"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "zigbee"
+      ],
+      "images": {
+        "large": "/drivers/sr_zs_switch/assets/images/large.png",
+        "small": "/drivers/sr_zs_switch/assets/images/small.png"
+      },
+      "zigbee": {
+        "manufacturerName": [
+          "_TZ3002_vaq2bfcu"
+        ],
+        "productId": [
+          "TS0726"
+        ],
+        "endpoints": {
+          "1": {
+            "clusters": [
+              0,
+              4,
+              5,
+              6
+            ],
+            "bindings": [
+              6
+            ]
+          },
+          "2": {
+            "clusters": [
+              0,
+              4,
+              5,
+              6
+            ],
+            "bindings": [
+              6
+            ]
+          },
+          "3": {
+            "clusters": [
+              0,
+              4,
+              5,
+              6
+            ],
+            "bindings": [
+              6
+            ]
+          }
+        },
+        "multiEndpoint": true
+      },
+      "settings": [
+        {
+          "id": "light_mode",
+          "type": "dropdown",
+          "label": {
+            "en": "Light Mode",
+            "pl": "Tryb światła"
+          },
+          "value": "relay",
+          "values": [
+            {
+              "id": "none",
+              "label": {
+                "en": "None",
+                "pl": "Brak"
+              }
+            },
+            {
+              "id": "relay",
+              "label": {
+                "en": "Relay",
+                "pl": "Przekaźnik"
+              }
+            },
+            {
+              "id": "pos",
+              "label": {
+                "en": "Position",
+                "pl": "Pozycja"
+              }
+            }
+          ]
+        },
+        {
+          "id": "switch_1_mode",
+          "type": "dropdown",
+          "label": {
+            "en": "Switch 1 Mode",
+            "pl": "Tryb przełącznika 1"
+          },
+          "value": "switch_1",
+          "values": [
+            {
+              "id": "switch_1",
+              "label": {
+                "en": "Switch",
+                "pl": "Przełącznik"
+              }
+            },
+            {
+              "id": "scene_1",
+              "label": {
+                "en": "Scene Button",
+                "pl": "Przycisk sceny"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "switch_1_gang",
       "name": {
         "en": "1 Gang Switch Module"
@@ -13663,6 +13812,51 @@
       "getable": true,
       "setable": true
     },
+    "countdown_1": {
+      "type": "number",
+      "title": {
+        "en": "Timer 1",
+        "pl": "Timer 1"
+      },
+      "units": {
+        "en": "s"
+      },
+      "min": 0,
+      "max": 43200,
+      "step": 1,
+      "getable": true,
+      "setable": true
+    },
+    "countdown_2": {
+      "type": "number",
+      "title": {
+        "en": "Timer 2",
+        "pl": "Timer 2"
+      },
+      "units": {
+        "en": "s"
+      },
+      "min": 0,
+      "max": 43200,
+      "step": 1,
+      "getable": true,
+      "setable": true
+    },
+    "countdown_3": {
+      "type": "number",
+      "title": {
+        "en": "Timer 3",
+        "pl": "Timer 3"
+      },
+      "units": {
+        "en": "s"
+      },
+      "min": 0,
+      "max": 43200,
+      "step": 1,
+      "getable": true,
+      "setable": true
+    },
     "finger_bot_mode": {
       "type": "enum",
       "title": {
@@ -13795,6 +13989,36 @@
       "getable": true,
       "setable": false,
       "uiVOCmponent": "sensor"
+    },
+    "onoff_1": {
+      "type": "boolean",
+      "title": {
+        "en": "Switch 1",
+        "pl": "Przełącznik 1"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "toggle"
+    },
+    "onoff_2": {
+      "type": "boolean",
+      "title": {
+        "en": "Switch 2",
+        "pl": "Przełącznik 2"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "toggle"
+    },
+    "onoff_3": {
+      "type": "boolean",
+      "title": {
+        "en": "Switch 3",
+        "pl": "Przełącznik 3"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "toggle"
     },
     "soil_moisture": {
       "type": "number",

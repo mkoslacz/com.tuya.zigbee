@@ -1,0 +1,15 @@
+{
+  "type": "number",
+  "title": {
+    "en": "Timer 2",
+    "pl": "Timer 2"
+  },
+  "units": {
+    "en": "s"
+  },
+  "min": 0,
+  "max": 43200,
+  "step": 1,
+  "getable": true,
+  "setable": true
+} 
