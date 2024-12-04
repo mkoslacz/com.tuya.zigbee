@@ -6,7 +6,9 @@
   },
   "class": "socket",
   "capabilities": [
-    "onoff"
+    "onoff_1",
+    "onoff_2",
+    "onoff_3"
   ],
   "platforms": ["local"],
   "connectivity": ["zigbee"],
@@ -19,77 +21,29 @@
     "productId": ["TS0726"],
     "endpoints": {
       "1": {
-        "clusters": [0, 4, 5, 6],
-        "bindings": [6]
+        "clusters": [
+          6
+        ],
+        "bindings": [
+          6
+        ]
       },
       "2": {
-        "clusters": [0, 4, 5, 6],
-        "bindings": [6]
+        "clusters": [
+          6
+        ],
+        "bindings": [
+          6
+        ]
       },
       "3": {
-        "clusters": [0, 4, 5, 6],
-        "bindings": [6]
+        "clusters": [
+          6
+        ],
+        "bindings": [
+          6
+        ]
       }
-    },
-    "multiEndpoint": true
-  },
-  "settings": [
-    {
-      "id": "light_mode",
-      "type": "dropdown",
-      "label": {
-        "en": "Light Mode",
-        "pl": "Tryb światła"
-      },
-      "value": "relay",
-      "values": [
-        {
-          "id": "none",
-          "label": {
-            "en": "None",
-            "pl": "Brak"
-          }
-        },
-        {
-          "id": "relay",
-          "label": {
-            "en": "Relay",
-            "pl": "Przekaźnik"
-          }
-        },
-        {
-          "id": "pos",
-          "label": {
-            "en": "Position",
-            "pl": "Pozycja"
-          }
-        }
-      ]
-    },
-    {
-      "id": "switch_1_mode",
-      "type": "dropdown",
-      "label": {
-        "en": "Switch 1 Mode",
-        "pl": "Tryb przełącznika 1"
-      },
-      "value": "switch_1",
-      "values": [
-        {
-          "id": "switch_1",
-          "label": {
-            "en": "Switch",
-            "pl": "Przełącznik"
-          }
-        },
-        {
-          "id": "scene_1",
-          "label": {
-            "en": "Scene Button",
-            "pl": "Przycisk sceny"
-          }
-        }
-      ]
     }
-  ]
+  }
 } 
