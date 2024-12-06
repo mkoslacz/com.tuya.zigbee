@@ -1,0 +1,28 @@
+{
+  "triggers": [
+    {
+      "id": "onoff_1_true",
+      "title": { "en": "switch 1 turned on" }
+    },
+    {
+      "id": "onoff_1_false",
+      "title": { "en": "switch 1 turned off" }
+    },
+    {
+      "id": "onoff_2_true",
+      "title": { "en": "switch 2 turned on" }
+    },
+    {
+      "id": "onoff_2_false",
+      "title": { "en": "switch 2 turned off" }
+    },
+    {
+      "id": "onoff_3_true",
+      "title": { "en": "switch 3 turned on" }
+    },
+    {
+      "id": "onoff_3_false",
+      "title": { "en": "switch 3 turned off" }
+    }
+  ]
+}
