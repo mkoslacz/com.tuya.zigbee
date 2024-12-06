@@ -24,5 +24,31 @@
       "id": "onoff_3_false",
       "title": { "en": "switch 3 turned off" }
     }
+  ],
+  "actions": [
+    {
+      "id": "set_onoff_1_true",
+      "title": { "en": "turn on switch 1" }
+    },
+    {
+      "id": "set_onoff_1_false",
+      "title": { "en": "turn off switch 1" }
+    },
+    {
+      "id": "set_onoff_2_true",
+      "title": { "en": "turn on switch 2" }
+    },
+    {
+      "id": "set_onoff_2_false",
+      "title": { "en": "turn off switch 2" }
+    },
+    {
+      "id": "set_onoff_3_true",
+      "title": { "en": "turn on switch 3" }
+    },
+    {
+      "id": "set_onoff_3_false",
+      "title": { "en": "turn off switch 3" }
+    }
   ]
 }

@@ -32,7 +32,16 @@ class SRZSSwitch extends ZigBeeDevice {
       }
 
       await this.magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode);
+
+// Rejestruj akcje dla endpointów 1, 2 i 3
+      registerSetOnOffAction.call(this, 'set_onoff_1_true', 1, true);
+      registerSetOnOffAction.call(this, 'set_onoff_1_false', 1, false);
+      registerSetOnOffAction.call(this, 'set_onoff_2_true', 2, true);
+      registerSetOnOffAction.call(this, 'set_onoff_2_false', 2, false);
+      registerSetOnOffAction.call(this, 'set_onoff_3_true', 3, true);
+      registerSetOnOffAction.call(this, 'set_onoff_3_false', 3, false);
     }
+
 
   async magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode) {
     await zclNode.endpoints[1].clusters.basic.readAttributes([
@@ -47,6 +56,24 @@ class SRZSSwitch extends ZigBeeDevice {
         this.error('Error when reading device attributes ', err);
       });
   }
+}
+
+// Funkcja rejestrująca akcję włączania/wyłączania dla danego endpointu
+function registerSetOnOffAction(cardName, endpointId, state) {
+  const actionCard = this.homey.flow.getActionCard(cardName);
+  actionCard.registerRunListener(async (args) => {
+    this.log(`Executing action ${cardName}`);
+    try {
+      if(state) {
+        await this.zclNode.endpoints[endpointId].clusters.onOff.setOn();  // Włącz
+      } else {
+        await this.zclNode.endpoints[endpointId].clusters.onOff.setOff(); // Wyłącz
+      }
+    } catch (error) {
+      this.error(`Error executing ${cardName}`, error);
+      return false; // Zwracamy false, gdy wystąpi błąd
+    }
+  });
 }
 
 module.exports = SRZSSwitch;
