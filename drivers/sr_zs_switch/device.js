@@ -5,7 +5,7 @@ const { CLUSTER } = require('zigbee-clusters');
 
 class SRZSSwitch extends ZigBeeDevice {
 
-    async onNodeInit({zclNode}) {
+    async onNodeInit({ zclNode }) {
         this.printNode();
 
         // Przełącznik 1
@@ -27,7 +27,7 @@ class SRZSSwitch extends ZigBeeDevice {
             set: 'toggle',
             setParser: () => ({}),
             report: 'onOff',
-            reportParser: value => value === 1
+            reportParser:  value => value
         });
 
         // Przełącznik 2
@@ -49,7 +49,7 @@ class SRZSSwitch extends ZigBeeDevice {
             set: 'toggle',
             setParser: () => ({}),
             report: 'onOff',
-            reportParser: value => value === 1
+            reportParser:  value => value
         });
 
         // Przełącznik 3
@@ -71,8 +71,22 @@ class SRZSSwitch extends ZigBeeDevice {
             set: 'toggle',
             setParser: () => ({}),
             report: 'onOff',
-            reportParser: value => value === 1
+            reportParser: value => value
         });
+
+        // await device.getEndpoint(1).read('genBasic', ['manufacturerName', 'zclVersion', 'appVersion', 'modelId', 'powerSource', 0xfffe]);
+
+        await zclNode.endpoints[1].clusters.basic.readAttributes([
+            'manufacturerName',
+            'zclVersion',
+            'appVersion',
+            'modelId',
+            'powerSource',
+            'attributeReportingStatus'
+        ])
+            .catch(err => {
+                this.error('Error when reading device attributes ', err);
+            });
     }
 }
 
