@@ -23,6 +23,48 @@
     {
       "id": "onoff_3_false",
       "title": { "en": "switch 3 turned off" }
+    },
+    {
+      "id": "scene_1_triggered",
+      "title": { 
+        "en": "Scene 1 triggered",
+        "pl": "Scena 1 uruchomiona"
+      }
+    },
+    {
+      "id": "scene_2_triggered",
+      "title": { 
+        "en": "Scene 2 triggered",
+        "pl": "Scena 2 uruchomiona"
+      }
+    },
+    {
+      "id": "scene_3_triggered",
+      "title": { 
+        "en": "Scene 3 triggered",
+        "pl": "Scena 3 uruchomiona"
+      }
+    },
+    {
+      "id": "scene_4_triggered",
+      "title": { 
+        "en": "Scene 4 triggered",
+        "pl": "Scena 4 uruchomiona"
+      }
+    },
+    {
+      "id": "scene_5_triggered",
+      "title": { 
+        "en": "Scene 5 triggered",
+        "pl": "Scena 5 uruchomiona"
+      }
+    },
+    {
+      "id": "scene_6_triggered",
+      "title": { 
+        "en": "Scene 6 triggered",
+        "pl": "Scena 6 uruchomiona"
+      }
     }
   ],
   "actions": [

@@ -40,6 +40,25 @@ class SRZSSwitch extends ZigBeeDevice {
       registerSetOnOffAction.call(this, 'set_onoff_2_false', 2, false);
       registerSetOnOffAction.call(this, 'set_onoff_3_true', 3, true);
       registerSetOnOffAction.call(this, 'set_onoff_3_false', 3, false);
+
+
+    // Obsługa przycisków scen
+    const node = await this.homey.zigbee.getNode(this);
+    node.handleFrame = (endpointId, clusterId, frame, meta) => {
+      if (clusterId === 6) {
+        this.log("endpointId:", endpointId, ", clusterId:", clusterId, ", frame:", frame.toJSON(), ", meta:", meta);
+
+        // Sprawdź czy to zdarzenie sceny (endpointy 4-6) czy przełącznika (endpointy 1-3)
+        if (endpointId >= 4 && endpointId <= 6) {
+          const triggerCard = this.homey.flow.getDeviceTriggerCard(`scene_${endpointId}_triggered`);
+          triggerCard.trigger(this)
+            .then(() => this.log(`Triggered scene ${endpointId}`))
+            .catch(err => this.error(`Error triggering scene ${endpointId}`, err));
+        }
+        // Ignoruj zdarzenia dla endpointów 1-3, bo są obsługiwane przez capability
+      }
+    };
+
     }
 
 
@@ -69,6 +88,7 @@ function registerSetOnOffAction(cardName, endpointId, state) {
       } else {
         await this.zclNode.endpoints[endpointId].clusters.onOff.setOff(); // Wyłącz
       }
+      return true;
     } catch (error) {
       this.error(`Error executing ${cardName}`, error);
       return false; // Zwracamy false, gdy wystąpi błąd
