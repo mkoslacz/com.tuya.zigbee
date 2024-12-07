@@ -70,7 +70,7 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
             const dpId = 17 + modeNumber; // mode_1 = dp 18, mode_2 = dp 19, mode_3 = dp 20
 
             try {
-              await this.writeEnum(dpId, newSettings[key]);
+              await this.writeEnumString(dpId, newSettings[key]);
               this.log(`Successfully set ${key} to ${newSettings[key]}`);
             } catch (err) {
               this.error(`Failed to set ${key}:`, err);
