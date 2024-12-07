@@ -110,3 +110,6 @@ ehthumbs.db
 .classpath
 .settings/
 .metadata/
+
+# Homey
+app.json
