@@ -1,9 +1,12 @@
 'use strict';
 
-const { ZigBeeDevice } = require('homey-zigbeedriver');
 const { CLUSTER } = require('zigbee-clusters');
+const { Cluster } = require('zigbee-clusters');
+const TuyaSpecificCluster = require('../../lib/TuyaSpecificCluster');
+const TuyaSpecificClusterDevice = require("../../lib/TuyaSpecificClusterDevice");
+Cluster.addCluster(TuyaSpecificCluster);
 
-class SRZSSwitch extends ZigBeeDevice {
+class SRZSSwitch extends TuyaSpecificClusterDevice {
 
     async onNodeInit({ zclNode }) {
         this.printNode();
@@ -58,9 +61,24 @@ class SRZSSwitch extends ZigBeeDevice {
         // Ignoruj zdarzenia dla endpointów 1-3, bo są obsługiwane przez capability
       }
     };
-
     }
+    async onSettings({ oldSettings, newSettings, changedKeys }) {
+        this.log('Settings were changed: ', newSettings);
+        for (const key of changedKeys) {
+          if (key.startsWith('mode_')) {
+            const modeNumber = parseInt(key.slice(-1));
+            const dpId = 17 + modeNumber; // mode_1 = dp 18, mode_2 = dp 19, mode_3 = dp 20
 
+            try {
+              await this.writeEnum(dpId, newSettings[key]);
+              this.log(`Successfully set ${key} to ${newSettings[key]}`);
+            } catch (err) {
+              this.error(`Failed to set ${key}:`, err);
+              throw err;
+            }
+          }
+        }
+      }
 
   async magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode) {
     await zclNode.endpoints[1].clusters.basic.readAttributes([
