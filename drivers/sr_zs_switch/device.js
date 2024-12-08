@@ -53,34 +53,33 @@ class SRZSSwitch extends ZigBeeDevice {
         this.log("Registering frame handler");
         node.handleFrame = (endpointId, clusterId, frame, meta) => {
             const frameData = frame.toJSON();
-            this.log("Received frame:", endpointId, clusterId, frameData, meta);
-
             if (clusterId === CLUSTER.ON_OFF.ID) {
-                // Sprawdź czy to raport atrybutu czy zmiana stanu
-                if (frameData.data[0] === 24) {  // 24 (0x18) to marker attribute report
-                    // To jest raport atrybutu - ignoruj
-                    this.log("Ignoring attribute report");
+                // Sprawdź pierwszy bajt ramki
+                const firstByte = frameData.data[0];
+                
+                if (firstByte === 24) {  // 0x18 - attribute report
+                    this.log("Ignoring attribute report onoff/scene frame", endpointId, clusterId, frameData, meta);
                     return;
-                }
+                } else if (firstByte === 8) {  // 0x08 - ramka onoff
+                    this.log("Received onoff frame:", endpointId, clusterId, frameData, meta);
 
-                this.log("OnOff frame:", endpointId, clusterId, frameData, meta);
+                    if (endpointId >= 1 && endpointId <= 3) {
+                        const value = frameData.data[6] === 1;
+                        
+                        // Aktualizuj stan capability
+                        this.log("setting capability value on endpoint", endpointId, value);
+                        this.setCapabilityValue(`onoff_${endpointId}`, value)
+                            .catch(err => this.error(`Error setting capability value for onoff_${endpointId}:`, err));
 
-                if (endpointId >= 1 && endpointId <= 3) {
-                    // Obsługa przełączników
-                    const value = frameData.data[6] === 1;  // ostatni bajt to stan
-                    
-                    // Aktualizuj stan capability
-                    this.log("setting capability value on endpoint", endpointId, value);
-                    this.setCapabilityValue(`onoff_${endpointId}`, value)
-                        .catch(err => this.error(`Error setting capability value for onoff_${endpointId}:`, err));
-
-                    // Wyzwól trigger
-                    this.log(`triggering onoff_${endpointId}_${value ? 'true' : 'false'}`);
-                    const triggerCard = this.homey.flow.getDeviceTriggerCard(`onoff_${endpointId}_${value ? 'true' : 'false'}`);
-                    triggerCard.trigger(this)
-                        .catch(err => this.error(`Error triggering onoff_${endpointId}_${value}:`, err));
-                } else if (endpointId >= 4 && endpointId <= 6) {
-                    // Obsługa scen - format ramki jest inny
+                        // Wyzwól trigger
+                        this.log(`triggering onoff_${endpointId}_${value ? 'true' : 'false'}`);
+                        const triggerCard = this.homey.flow.getDeviceTriggerCard(`onoff_${endpointId}_${value ? 'true' : 'false'}`);
+                        triggerCard.trigger(this)
+                            .catch(err => this.error(`Error triggering onoff_${endpointId}_${value}:`, err));
+                    } else { this.error("Unexpected endpoint for onoff frame:", endpointId, clusterId, frameData, meta)}
+                } else if (firstByte === 1) {  // 0x01 - ramka sceny
+                  this.log("Received scene frame:", endpointId, clusterId, frameData, meta);
+                    // Obsługa scen dla wszystkich endpointów
                     this.log(`triggering scene_${endpointId}_triggered`);
                     const triggerCard = this.homey.flow.getDeviceTriggerCard(`scene_${endpointId}_triggered`);
                     triggerCard.trigger(this, {
@@ -88,8 +87,9 @@ class SRZSSwitch extends ZigBeeDevice {
                         scene_name: `Scene ${endpointId}`
                     })
                     .catch(err => this.error(`Error triggering scene ${endpointId}:`, err));
-                }
-            }
+                } else { this.error("Unexpected onoff/scene frame type:", endpointId, clusterId, frameData, meta)}
+            } else { this.log("Received not an onoff/scene frame:", endpointId, clusterId, frameData, meta)}
+            
         };
         this.log("Frame handler registered");
     }
