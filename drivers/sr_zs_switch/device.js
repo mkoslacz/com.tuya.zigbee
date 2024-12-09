@@ -8,19 +8,19 @@ class SRZSSwitch extends ZigBeeDevice {
     async onNodeInit({ zclNode }) {
         this.printNode();
 
-        // Konfiguracja attribute reporting dla wszystkich endpointów
-        for (let i = 1; i <= 6; i++) {
-            await this.configureAttributeReporting([
-                {
-                    endpointId: i,
-                    cluster: CLUSTER.ON_OFF,
-                    attributeName: 'onOff',
-                    minInterval: 0,
-                    maxInterval: 60,
-                    minChange: 1
-                }
-            ]);
-        }
+        // // Konfiguracja attribute reporting dla wszystkich endpointów
+        // for (let i = 1; i <= 6; i++) {
+        //     await this.configureAttributeReporting([
+        //         {
+        //             endpointId: i,
+        //             cluster: CLUSTER.ON_OFF,
+        //             attributeName: 'onOff',
+        //             minInterval: 0,
+        //             maxInterval: 60,
+        //             minChange: 1
+        //         }
+        //     ]);
+        // }
 
         // Rejestracja listenerów dla capabilities
         for (let i = 1; i <= 3; i++) {
