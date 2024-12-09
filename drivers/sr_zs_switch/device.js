@@ -51,21 +51,35 @@ class SRZSSwitch extends ZigBeeDevice {
 
         const node = await this.homey.zigbee.getNode(this);
         this.log("Registering frame handler");
+
+        // Dodajemy zmienne dla debounce
+        this.lastFrameTime = {};
+        this.debounceTime = 900; // 900ms - pokryje burst zdarzeń (~800ms) z zapasem
+
         node.handleFrame = (endpointId, clusterId, frame, meta) => {
             const frameData = frame.toJSON();
             if (clusterId === CLUSTER.ON_OFF.ID) {
-                // Sprawdź pierwszy bajt ramki
                 const firstByte = frameData.data[0];
+                const currentTime = Date.now();
                 
-                if (firstByte === 24) {  // 0x18 - attribute report
+                if (firstByte === 24) {
                     this.log("Ignoring attribute report onoff/scene frame", endpointId, clusterId, frameData, meta);
                     return;
-                } else if (firstByte === 8) {  // 0x08 - ramka onoff
-                    this.log("Received onoff frame:", endpointId, clusterId, frameData, meta);
+                } else if (firstByte === 8) {
+                    const value = frameData.data[6] === 1;
+                    const frameKey = `${endpointId}-${firstByte}-${value}`; // Dodajemy wartość on/off do klucza
+                    
+                    // Sprawdź czy minął czas debounce
+                    if (this.lastFrameTime[frameKey] && 
+                        (currentTime - this.lastFrameTime[frameKey]) < this.debounceTime) {
+                        this.log('Debouncing frame:', frameKey);
+                        return;
+                    }
+                    
+                    // Aktualizuj czas ostatniej ramki
+                    this.lastFrameTime[frameKey] = currentTime;
 
                     if (endpointId >= 1 && endpointId <= 3) {
-                        const value = frameData.data[6] === 1;
-                        
                         // Aktualizuj stan capability
                         this.log("setting capability value on endpoint", endpointId, value);
                         this.setCapabilityValue(`onoff_${endpointId}`, value)
@@ -77,8 +91,20 @@ class SRZSSwitch extends ZigBeeDevice {
                         triggerCard.trigger(this)
                             .catch(err => this.error(`Error triggering onoff_${endpointId}_${value}:`, err));
                     } else { this.error("Unexpected endpoint for onoff frame:", endpointId, clusterId, frameData, meta)}
-                } else if (firstByte === 1) {  // 0x01 - ramka sceny
-                  this.log("Received scene frame:", endpointId, clusterId, frameData, meta);
+                } else if (firstByte === 1) {
+                    const frameKey = `${endpointId}-${firstByte}-scene`; // Dla scen dodajemy stały suffix
+                    
+                    // Sprawdź czy minął czas debounce
+                    if (this.lastFrameTime[frameKey] && 
+                        (currentTime - this.lastFrameTime[frameKey]) < this.debounceTime) {
+                        this.log('Debouncing frame:', frameKey);
+                        return;
+                    }
+                    
+                    // Aktualizuj czas ostatniej ramki
+                    this.lastFrameTime[frameKey] = currentTime;
+
+                    this.log("Received scene frame:", endpointId, clusterId, frameData, meta);
                     // Obsługa scen dla wszystkich endpointów
                     this.log(`triggering scene_${endpointId}_triggered`);
                     const triggerCard = this.homey.flow.getDeviceTriggerCard(`scene_${endpointId}_triggered`);
