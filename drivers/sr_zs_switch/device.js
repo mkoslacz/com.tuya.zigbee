@@ -99,7 +99,7 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
             if (clusterId !== CLUSTER.ON_OFF.ID) {
                 this.log("Received not an onoff/scene frame:", endpointId, clusterId, frame.toJSON(), meta);
             } else {
-                this.handleOnOffFrame(endpointId, frame, meta);
+                this.handleSwitchOrSceneFrame(endpointId, frame, meta);
             }
         };
         this.log("Frame handler registered");
@@ -111,8 +111,8 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
      * @param {Object} frame - Frame data
      * @param {Object} meta - Meta information
      */
-    handleOnOffFrame(endpointId, frame, meta) {
-        this.log("Handling onoff frame:", endpointId, frame.toJSON(), meta);
+    handleSwitchOrSceneFrame(endpointId, frame, meta) {
+        this.log("Handling onoff/scene frame:", endpointId, frame.toJSON(), meta);
         const frameData = frame.toJSON();
         const firstByte = frameData.data[0];
         const currentTime = Date.now();
@@ -145,14 +145,16 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
             return;
         }
 
-        this.log("Handling switch frame:", endpointId, frameData, meta);
         const value = frameData.data[6] === 1;
         const frameKey = `${endpointId}-${FRAME_TYPES.SWITCH_EVENT}-${value}`;
 
-        if (this.isDebounced(frameKey, currentTime)) return;
-        this.lastFrameTime[frameKey] = currentTime;
-
-        this.updateSwitchState(endpointId, value);
+        if (!this.isDebounced(frameKey, currentTime)) {
+            this.log("Handling switch frame:", endpointId, frameData, meta);
+            this.lastFrameTime[frameKey] = currentTime;
+            this.updateSwitchState(endpointId, value);
+        } else {
+            this.log("Debouncing switch frame:", endpointId, frameData, meta);
+        }
     }
 
     /**
@@ -165,8 +167,11 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         const frameKey = `${endpointId}-${FRAME_TYPES.SCENE_EVENT}-scene`;
 
         if (!this.isDebounced(frameKey, currentTime)) {
+            this.log("Handling scene frame:", endpointId, meta);
             this.lastFrameTime[frameKey] = currentTime;
             this.triggerSceneFlow(endpointId);
+        } else {
+            this.log("Debouncing scene frame:", endpointId, meta);
         }
     }
 
@@ -263,11 +268,14 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
 
 function registerSetOnOffAction(cardName, endpointId, state) {
     const actionCard = this.homey.flow.getActionCard(cardName);
-    actionCard.registerRunListener(async () => {
+    actionCard.registerRunListener(async (args) => {
         this.log(`Executing action ${cardName}`);
         try {
-            const cluster = this.zclNode.endpoints[endpointId].clusters.onOff;
-            await (state ? cluster.setOn() : cluster.setOff());
+            if (state) {
+                await this.zclNode.endpoints[endpointId].clusters.onOff.setOn();
+            } else {
+                await this.zclNode.endpoints[endpointId].clusters.onOff.setOff();
+            }
             return true;
         } catch (error) {
             this.error(`Error executing ${cardName}`, error);
