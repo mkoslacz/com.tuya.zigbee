@@ -4,10 +4,27 @@ const { CLUSTER } = require('zigbee-clusters');
 const { Cluster } = require('zigbee-clusters');
 const TuyaSpecificCluster = require('../../lib/TuyaSpecificCluster');
 const TuyaSpecificClusterDevice = require("../../lib/TuyaSpecificClusterDevice");
-Cluster.addCluster(TuyaSpecificCluster);
+
+// Constants for frame types
+const FRAME_TYPES = {
+    ATTRIBUTE_REPORT: 24,
+    SWITCH_EVENT: 8,
+    SCENE_EVENT: 1
+};
+
+const SWITCH_CONFIG = {
+    FIRST_SWITCH_ID: 1,
+    LAST_SWITCH_ID: 3,
+    DEBOUNCE_TIME_MS: 900
+};
 
 class SRZSSwitch extends TuyaSpecificClusterDevice {
     
+    /**
+     * Initialize the device
+     * @param {Object} params - Initialization parameters
+     * @param {Object} params.zclNode - ZCL node object
+     */
     async onNodeInit({ zclNode }) {
         await this.initializeDevice(zclNode);
         await this.registerCapabilities(zclNode);
@@ -15,22 +32,42 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         await this.setupFrameHandler();
     }
 
+    /**
+     * Initialize device configuration and settings
+     * @param {Object} zclNode - ZCL node object
+     */
     async initializeDevice(zclNode) {
         this.printNode();
         await this.magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode);
         this.lastFrameTime = {};
-        this.debounceTime = 900;
+        this.debounceTime = SWITCH_CONFIG.DEBOUNCE_TIME_MS;
     }
 
+    /**
+     * Register capability listeners for each endpoint
+     * @param {Object} zclNode - ZCL node object
+     */
     async registerCapabilities(zclNode) {
-        for (let i = 1; i <= 3; i++) {
-            this.registerCapabilityListener(`onoff_${i}`, async (value) => {
-                return await this.handleOnOffCapability(zclNode, i, value);
+        for (let switchId = SWITCH_CONFIG.FIRST_SWITCH_ID; switchId <= SWITCH_CONFIG.LAST_SWITCH_ID; switchId++) {
+            this.registerCapabilityListener(`onoff_${switchId}`, async (value) => {
+                return await this.handleOnOffCapability(zclNode, switchId, value);
             });
         }
     }
 
+    /**
+     * Handle on/off capability changes
+     * @param {Object} zclNode - ZCL node object
+     * @param {number} endpoint - Endpoint number
+     * @param {boolean} value - On/off value
+     * @returns {Promise<boolean>} Success status
+     */
     async handleOnOffCapability(zclNode, endpoint, value) {
+        if (!this.isValidEndpoint(endpoint)) {
+            this.error(`Invalid endpoint: ${endpoint}`);
+            return false;
+        }
+
         try {
             const cluster = zclNode.endpoints[endpoint].clusters.onOff;
             await (value ? cluster.setOn() : cluster.setOff());
@@ -41,13 +78,19 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         }
     }
 
+    /**
+     * Register action cards for each endpoint
+     */
     async registerActions() {
-        for (let i = 1; i <= 3; i++) {
-            registerSetOnOffAction.call(this, `set_onoff_${i}_true`, i, true);
-            registerSetOnOffAction.call(this, `set_onoff_${i}_false`, i, false);
+        for (let switchId = SWITCH_CONFIG.FIRST_SWITCH_ID; switchId <= SWITCH_CONFIG.LAST_SWITCH_ID; switchId++) {
+            registerSetOnOffAction.call(this, `set_onoff_${switchId}_true`, switchId, true);
+            registerSetOnOffAction.call(this, `set_onoff_${switchId}_false`, switchId, false);
         }
     }
 
+    /**
+     * Setup frame handler for device events
+     */
     async setupFrameHandler() {
         const node = await this.homey.zigbee.getNode(this);
         this.log("Registering frame handler");
@@ -62,6 +105,12 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         this.log("Frame handler registered");
     }
 
+    /**
+     * Handle on/off frame events
+     * @param {number} endpointId - Endpoint ID
+     * @param {Object} frame - Frame data
+     * @param {Object} meta - Meta information
+     */
     handleOnOffFrame(endpointId, frame, meta) {
         this.log("Handling onoff frame:", endpointId, frame.toJSON(), meta);
         const frameData = frame.toJSON();
@@ -69,13 +118,13 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         const currentTime = Date.now();
 
         switch(firstByte) {
-            case 24:
+            case FRAME_TYPES.ATTRIBUTE_REPORT:
                 this.log("Ignoring attribute report onoff/scene frame", endpointId, frameData, meta);
                 break;
-            case 8:
+            case FRAME_TYPES.SWITCH_EVENT:
                 this.handleSwitchFrame(endpointId, frameData, currentTime, meta);
                 break;
-            case 1:
+            case FRAME_TYPES.SCENE_EVENT:
                 this.handleSceneFrame(endpointId, currentTime, meta);
                 break;
             default:
@@ -83,30 +132,50 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         }
     }
 
+    /**
+     * Handle switch frame events
+     * @param {number} endpointId - Endpoint ID
+     * @param {Object} frameData - Frame data
+     * @param {number} currentTime - Current timestamp
+     * @param {Object} meta - Meta information
+     */
     handleSwitchFrame(endpointId, frameData, currentTime, meta) {
+        if (!this.isValidEndpoint(endpointId)) {
+            this.error("Unexpected endpoint for onoff frame:", endpointId, frameData, meta);
+            return;
+        }
+
         this.log("Handling switch frame:", endpointId, frameData, meta);
         const value = frameData.data[6] === 1;
-        const frameKey = `${endpointId}-8-${value}`;
+        const frameKey = `${endpointId}-${FRAME_TYPES.SWITCH_EVENT}-${value}`;
 
         if (this.isDebounced(frameKey, currentTime)) return;
         this.lastFrameTime[frameKey] = currentTime;
 
-        if (endpointId >= 1 && endpointId <= 3) {
-            this.updateSwitchState(endpointId, value);
-        } else {
-            this.error("Unexpected endpoint for onoff frame:", endpointId, frameData, meta);
-        }
+        this.updateSwitchState(endpointId, value);
     }
 
+    /**
+     * Handle scene frame events
+     * @param {number} endpointId - Endpoint ID
+     * @param {number} currentTime - Current timestamp
+     * @param {Object} meta - Meta information
+     */
     handleSceneFrame(endpointId, currentTime, meta) {
-        const frameKey = `${endpointId}-1-scene`;
+        const frameKey = `${endpointId}-${FRAME_TYPES.SCENE_EVENT}-scene`;
 
-        if (this.isDebounced(frameKey, currentTime) === false) {
+        if (!this.isDebounced(frameKey, currentTime)) {
             this.lastFrameTime[frameKey] = currentTime;
             this.triggerSceneFlow(endpointId);
         }
     }
 
+    /**
+     * Check if frame should be debounced
+     * @param {string} frameKey - Frame identifier
+     * @param {number} currentTime - Current timestamp
+     * @returns {boolean} True if frame should be debounced
+     */
     isDebounced(frameKey, currentTime) {
         if (this.lastFrameTime[frameKey] && 
             (currentTime - this.lastFrameTime[frameKey]) < this.debounceTime) {
@@ -114,6 +183,16 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Validate endpoint number
+     * @param {number} endpoint - Endpoint number to validate
+     * @returns {boolean} True if endpoint is valid
+     */
+    isValidEndpoint(endpoint) {
+        return endpoint >= SWITCH_CONFIG.FIRST_SWITCH_ID && 
+               endpoint <= SWITCH_CONFIG.LAST_SWITCH_ID;
     }
 
     async updateSwitchState(endpointId, value) {
