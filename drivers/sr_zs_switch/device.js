@@ -1,9 +1,12 @@
 'use strict';
 
-const { ZigBeeDevice } = require('homey-zigbeedriver');
 const { CLUSTER } = require('zigbee-clusters');
+const { Cluster } = require('zigbee-clusters');
+const TuyaSpecificCluster = require('../../lib/TuyaSpecificCluster');
+const TuyaSpecificClusterDevice = require("../../lib/TuyaSpecificClusterDevice");
+Cluster.addCluster(TuyaSpecificCluster);
 
-class SRZSSwitch extends ZigBeeDevice {
+class SRZSSwitch extends TuyaSpecificClusterDevice {
 
     async onNodeInit({ zclNode }) {
         this.printNode();
@@ -119,20 +122,37 @@ class SRZSSwitch extends ZigBeeDevice {
         };
         this.log("Frame handler registered");
     }
-
-    async magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode) {
-        await zclNode.endpoints[1].clusters.basic.readAttributes([
-            'manufacturerName',
-            'zclVersion',
-            'appVersion',
-            'modelId',
-            'powerSource',
-            'attributeReportingStatus'
-        ])
-            .catch(err => {
-                this.error('Error when reading device attributes ', err);
-            });
+    async onSettings({ oldSettings, newSettings, changedKeys }) {
+        this.log('Settings were changed (string mode): ', newSettings);
+        for (const key of changedKeys) {
+            if (key.startsWith('mode_')) {
+                const modeNumber = parseInt(key.slice(-1));
+                const dpId = 17 + modeNumber; // mode_1 = dp 18, mode_2 = dp 19, mode_3 = dp 20
+    
+                try {
+                    await this.writeEnum(dpId, newSettings[key].includes('scene') ? 1 : 0);
+                    this.log(`Successfully set ${key} to ${newSettings[key]}`);
+                } catch (err) {
+                    this.error(`Failed to set ${key}:`, err);
+                    throw err;
+                }
+            }
+        }
     }
+
+  async magicallyConfigureTuyaSeparateOnoffSwitchingOnEndpoints(zclNode) {
+    await zclNode.endpoints[1].clusters.basic.readAttributes([
+      'manufacturerName',
+      'zclVersion',
+      'appVersion',
+      'modelId',
+      'powerSource',
+      'attributeReportingStatus'
+    ])
+      .catch(err => {
+        this.error('Error when reading device attributes ', err);
+      });
+  }
 }
 
 // Funkcja rejestrująca akcję włączania/wyłączania dla danego endpointu
