@@ -28,9 +28,10 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
     async onNodeInit({ zclNode }) {
         await this.initializeDevice(zclNode);
         await this.registerCapabilities(zclNode);
-        await this.registerActions();
         await this.setupFrameHandler();
+        await this.registerActionCards();
         await this.registerConditionCards();
+        await this.registerTriggerCards();
     }
 
     /**
@@ -76,16 +77,6 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         } catch (error) {
             this.error(`Error setting onoff_${endpoint}:`, error);
             return false;
-        }
-    }
-
-    /**
-     * Register action cards for each endpoint
-     */
-    async registerActions() {
-        for (let switchId = SWITCH_CONFIG.FIRST_SWITCH_ID; switchId <= SWITCH_CONFIG.LAST_SWITCH_ID; switchId++) {
-            registerSetOnOffAction.call(this, `set_onoff_${switchId}_true`, switchId, true);
-            registerSetOnOffAction.call(this, `set_onoff_${switchId}_false`, switchId, false);
         }
     }
 
@@ -205,24 +196,21 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         this.log("setting capability value on endpoint", endpointId, value);
         await this.setCapabilityValue(`onoff_${endpointId}`, value)
             .catch(err => this.error(`Error setting capability value for onoff_${endpointId}:`, err));
-        this.triggerSwitchFlow(endpointId, value);
-    }
 
-    async triggerSwitchFlow(endpointId, value) {
-        this.log(`triggering onoff_${endpointId}_${value ? 'true' : 'false'}`);
-        const triggerCard = this.homey.flow.getDeviceTriggerCard(`onoff_${endpointId}_${value ? 'true' : 'false'}`);
-        await triggerCard.trigger(this)
-            .catch(err => this.error(`Error triggering onoff_${endpointId}_${value}:`, err));
+        // Trigger configurable card
+        await this._switchTrigger.trigger(this, {
+            state: value
+        }, {
+            switch: endpointId.toString(),
+            state: value
+        }).catch(err => this.error('Error triggering switch_turned:', err));
     }
 
     async triggerSceneFlow(endpointId) {
-        this.log(`triggering scene_${endpointId}_triggered`);
-        const triggerCard = this.homey.flow.getDeviceTriggerCard(`scene_${endpointId}_triggered`);
-        await triggerCard.trigger(this, {
-            scene: endpointId,
-            scene_name: `Scene ${endpointId}`
-        })
-        .catch(err => this.error(`Error triggering scene ${endpointId}:`, err));
+        // Trigger configurable card
+        await this._sceneTrigger.trigger(this, {}, {
+            scene: endpointId.toString()
+        }).catch(err => this.error('Error triggering scene_triggered:', err));
     }
 
     async onSettings({ oldSettings, newSettings, changedKeys }) {
@@ -266,36 +254,57 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         });
     }
 
+      /**
+     * Register action cards for each endpoint
+     */
+      async registerActionCards() {
+        // Register configurable switch action
+        this.homey.flow.getActionCard('set_switch_state')
+            .registerRunListener(async (args) => {
+                const switchId = args.switch;
+                const state = args.state === 'true';
+                try {
+                    if (state) {
+                        await this.zclNode.endpoints[switchId].clusters.onOff.setOn();
+                    } else {
+                        await this.zclNode.endpoints[switchId].clusters.onOff.setOff();
+                    }
+                    return true;
+                } catch (error) {
+                    this.error(`Error executing set_switch_state for switch ${switchId}:`, error);
+                    return false;
+                }
+            });
+    }
+
     /**
      * Register condition cards for switches
      */
     async registerConditionCards() {
-        for (let switchId = SWITCH_CONFIG.FIRST_SWITCH_ID; switchId <= SWITCH_CONFIG.LAST_SWITCH_ID; switchId++) {
-            this.homey.flow.getConditionCard(`is_on_${switchId}`)
-                .registerRunListener(async (args, state) => {
-                    const currentValue = this.getCapabilityValue(`onoff_${switchId}`);
-                    return args.device.getCapabilityValue(`onoff_${switchId}`);
-                });
-        }
+        // Register configurable switch condition
+        this.homey.flow.getConditionCard('switch_is')
+            .registerRunListener(async (args, state) => {
+                const switchId = args.switch;
+                return this.getCapabilityValue(`onoff_${switchId}`);
+            });
     }
-}
 
-function registerSetOnOffAction(cardName, endpointId, state) {
-    const actionCard = this.homey.flow.getActionCard(cardName);
-    actionCard.registerRunListener(async (args) => {
-        this.log(`Executing action ${cardName}`);
-        try {
-            if (state) {
-                await this.zclNode.endpoints[endpointId].clusters.onOff.setOn();
-            } else {
-                await this.zclNode.endpoints[endpointId].clusters.onOff.setOff();
-            }
-            return true;
-        } catch (error) {
-            this.error(`Error executing ${cardName}`, error);
-            return false;
-        }
-    });
+    /**
+     * Register trigger cards for switches and scenes
+     */
+    async registerTriggerCards() {
+        // Register configurable switch trigger
+        this._switchTrigger = this.homey.flow.getDeviceTriggerCard('switch_state_changed');
+        this._switchTrigger.registerRunListener(async (args, state) => {
+            return args.switch === state.switch && args.state === state.state.toString();
+        });
+
+        // Register configurable scene trigger
+        this._sceneTrigger = this.homey.flow.getDeviceTriggerCard('scene_triggered_configurable');
+        this._sceneTrigger.registerRunListener(async (args, state) => {
+            return args.scene === state.scene;
+        });
+    }
 }
 
 module.exports = SRZSSwitch;
