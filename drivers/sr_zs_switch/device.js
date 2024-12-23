@@ -30,6 +30,7 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         await this.registerCapabilities(zclNode);
         await this.registerActions();
         await this.setupFrameHandler();
+        await this.registerConditionCards();
     }
 
     /**
@@ -263,6 +264,19 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         .catch(err => {
             this.error('Error when reading device attributes ', err);
         });
+    }
+
+    /**
+     * Register condition cards for switches
+     */
+    async registerConditionCards() {
+        for (let switchId = SWITCH_CONFIG.FIRST_SWITCH_ID; switchId <= SWITCH_CONFIG.LAST_SWITCH_ID; switchId++) {
+            this.homey.flow.getConditionCard(`is_on_${switchId}`)
+                .registerRunListener(async (args, state) => {
+                    const currentValue = this.getCapabilityValue(`onoff_${switchId}`);
+                    return args.device.getCapabilityValue(`onoff_${switchId}`);
+                });
+        }
     }
 }
 
