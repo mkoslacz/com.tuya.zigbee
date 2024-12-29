@@ -1,0 +1,70 @@
+{
+    "id": "wall_switch_3_gang_buttons",
+    "name": {
+      "en": "3 Gang Wall Switch - buttons",
+      "pl": "Przełącznik ścienny 3-kanałowy - buttons"
+    },
+    "class": "socket",
+    "platforms": ["local"],
+    "connectivity": ["zigbee"],
+    "capabilities": [
+      "onoff_1",
+      "onoff_2",
+      "onoff_3"
+    ],
+    "images": {
+      "large": "{{driverAssetsPath}}/images/large.png",
+      "small": "{{driverAssetsPath}}/images/small.png"
+    },
+    "energy": {
+      "approximation": {
+        "usageOn": 0,
+        "usageOff": 0
+      }
+    },
+    "zigbee": {
+      "manufacturerName": [
+        "_TYZB01_xiuox57i",
+        "_TYZB01_b8cr31hp",
+        "_TZ3000_wyhuocal",
+        "_TZ3000_cdamjqm9",
+        "_TYZB01_mqel1whf",
+        "_TZ3000_hlwm8e96",
+        "_TZ3000_thhxrept",
+        "_TZ3000_2dlwlvex",
+        "_TZ3000_qcdqw8nf",
+        "_TZ3000_vvlivusi",
+        "_TZ3000_5e5ptb24",
+        "_TZ3000_lrgccsxm",
+        "_TZ3000_w05exif3",
+        "_TZ3000_qewo8dlz",
+        "_TZ3000_aezbqpcu"
+      ],
+      "productId": [
+        "TS0003",
+        "TS0013",
+        "TS0043"
+      ],
+      "endpoints": {
+        "1": {
+          "clusters": [0, 6],
+          "bindings": [6]
+        },
+        "2": {
+          "clusters": [6],
+          "bindings": [6]
+        },
+        "3": {
+          "clusters": [6],
+          "bindings": [6]
+        }
+      },
+      "learnmode": {
+        "image": "{{driverAssetsPath}}/icon.svg",
+        "instruction": {
+          "en": "Press the setup button for 10 seconds (the LED should start blinking).",
+          "pl": "Naciśnij przycisk konfiguracji przez 10 sekund (dioda LED powinna zacząć migać)."
+        }
+      }
+    }
+}
