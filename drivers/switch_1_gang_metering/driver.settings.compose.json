@@ -48,6 +48,22 @@
       }
     },
     {
+      "id": "minReportEnergy",
+      "type": "number",
+      "label": {
+        "en": "Min report interval for energy consumption (s)"
+      },
+      "hint": {
+        "en": "Min interval before a report is sent to Homey (s)"
+      },
+      "value": 60,
+      "attr": {
+        "step": 1,
+        "min": 10,
+        "max": 86400
+      }
+    },
+    {
       "id": "minReportCurrent",
       "type": "number",
       "label": {

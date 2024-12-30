@@ -15,7 +15,8 @@ class switch_1_gang_metering extends ZigBeeDevice {
     // Initialize reporting offsets and settings
     this.meteringOffset = this.getSetting('metering_offset');
     this.measureOffset = this.getSetting('measure_offset') * 100;
-    this.minReportPower = this.getSetting('minReportPower') * 1000;
+    this.minReportPower = this.getSetting('minReportPower') * 1000; 
+    this.minReportEnergy = this.getSetting('minReportEnergy') * 1000;
     this.minReportCurrent = this.getSetting('minReportCurrent') * 1000;
     this.minReportVoltage = this.getSetting('minReportVoltage') * 1000;
 
@@ -62,7 +63,7 @@ class switch_1_gang_metering extends ZigBeeDevice {
       report: 'currentSummationDelivered',
       getOpts: {
         getOnStart: true,
-        pollInterval: 300000,
+        pollInterval: this.minReportEnergy,
       }
     });
 
@@ -99,25 +100,102 @@ class switch_1_gang_metering extends ZigBeeDevice {
       }
     });
 
-    // Register resetEnergyMeter capability
-    this.registerCapability('resetEnergyMeter', 'resetEnergyMeter');
+    this.registerCapabilityListener('button.reset_meter', async () => {
+     await this.resetEnergyMeter();
+    });
 
   }
 
   async resetEnergyMeter() {
+    this.log('Starting energy meter reset...');
+    
     try {
-      // Reset metering attributes (adjust the command according to your device)
-      await this.zclNode.endpoints[1].clusters.metering.writeAttributes({
-        'currentSummationDelivered': 0
-      });
-      this.log("Energy meter reset successfully");
+      const node = await this.homey.zigbee.getNode(this);
+      
+      // Send raw reset frame
+      await node.sendFrame(
+        1,  // endpoint id
+        0,  // cluster id (basic cluster)
+        Buffer.from([
+          1,  // frame control
+          0,  // transaction sequence number
+          0,  // command id (reset)
+        ])
+      );
+      
+      // Wait a moment for the reset to take effect
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Force refresh meter_power capability
+      await this.refreshCapabilityValue('meter_power');
+      
+      this.log('Energy meter reset completed');
     } catch (err) {
-      this.error("Failed to reset energy meter", err);
+      this.error('Error during energy meter reset:', err);
+      throw err;
+    }
+  }
+
+  // Helper method to refresh capability value
+  async refreshCapabilityValue(capability) {
+    try {
+      const value = await this.getCapabilityValue(capability);
+      await this.setCapabilityValue(capability, value);
+    } catch (err) {
+      this.error(`Failed to refresh ${capability}:`, err);
     }
   }
 
   onDeleted() {
     this.log("1 Gang Switch with metering removed");
+  }
+
+  async onSettings({ oldSettings, newSettings, changedKeys }) {
+    this.log('onSettings called with:', { oldSettings, newSettings, changedKeys });
+    // Aktualizuj offsety i interwały raportowania
+    try {
+    if (changedKeys.includes('metering_offset')) {
+      this.meteringOffset = newSettings.metering_offset;
+    }
+    if (changedKeys.includes('measure_offset')) {
+      this.measureOffset = newSettings.measure_offset * 100;
+    }
+    if (changedKeys.includes('minReportPower')) {
+      this.minReportPower = newSettings.minReportPower * 1000;
+      await this.setCapabilityOptions('measure_power', {
+        getOpts: {
+          pollInterval: this.minReportPower,
+        },
+      });
+    }
+    if (changedKeys.includes('minReportEnergy')) {
+      this.minReportEnergy = newSettings.minReportEnergy * 1000;
+      await this.setCapabilityOptions('meter_power', {
+        getOpts: {
+          pollInterval: this.minReportEnergy,
+        },
+      });
+    }
+    if (changedKeys.includes('minReportCurrent')) {
+      this.minReportCurrent = newSettings.minReportCurrent * 1000;
+      await this.setCapabilityOptions('measure_current', {
+        getOpts: {
+          pollInterval: this.minReportCurrent,
+        },
+      });
+    }
+    if (changedKeys.includes('minReportVoltage')) {
+      this.minReportVoltage = newSettings.minReportVoltage * 1000;
+      await this.setCapabilityOptions('measure_voltage', {
+        getOpts: {
+          pollInterval: this.minReportVoltage,
+        },
+      });
+    }
+    this.log('Settings updated successfully');
+    } catch (error) {
+      this.error('Error when updating settings:', error);
+    }
   }
 
 }
