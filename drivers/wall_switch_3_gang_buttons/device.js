@@ -83,9 +83,9 @@ class WallSwitch3GangButtons extends ZigBeeDevice {
                 this.log(`Action card triggered: switch ${switchId} to state ${state}`);
                 try {
                     if (state) {
-                        await this.zclNode.endpoints[switchId].clusters.onOff.setOn();
+                        await args.device.zclNode.endpoints[switchId].clusters.onOff.setOn();
                     } else {
-                        await this.zclNode.endpoints[switchId].clusters.onOff.setOff();
+                        await args.device.zclNode.endpoints[switchId].clusters.onOff.setOff();
                     }
                     return true;
                 } catch (error) {
@@ -104,7 +104,7 @@ class WallSwitch3GangButtons extends ZigBeeDevice {
                 let currentValue;
                 
                 try {
-                    currentValue = this.getCapabilityValue(`onoff_${switchId}`);
+                    currentValue = args.device.getCapabilityValue(`onoff_${switchId}`);
                     this.log('Current capability value:', currentValue);
                 } catch (err) {
                     this.error('Error getting capability value in condition card:', err);

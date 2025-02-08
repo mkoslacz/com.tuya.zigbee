@@ -265,9 +265,9 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
                 const state = args.state === 'true';
                 try {
                     if (state) {
-                        await this.zclNode.endpoints[switchId].clusters.onOff.setOn();
+                        await args.device.zclNode.endpoints[switchId].clusters.onOff.setOn();
                     } else {
-                        await this.zclNode.endpoints[switchId].clusters.onOff.setOff();
+                        await args.device.zclNode.endpoints[switchId].clusters.onOff.setOff();
                     }
                     return true;
                 } catch (error) {
@@ -285,7 +285,7 @@ class SRZSSwitch extends TuyaSpecificClusterDevice {
         this.homey.flow.getConditionCard('switch_is')
             .registerRunListener(async (args, state) => {
                 const switchId = args.switch;
-                return this.getCapabilityValue(`onoff_${switchId}`);
+                return args.device.getCapabilityValue(`onoff_${switchId}`);
             });
     }
 
